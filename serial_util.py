@@ -14,10 +14,10 @@ def get_numbers_from_text(text, separator="\t"):
             text = text.decode("utf-8")
 
         if (
-                strings_share_characters(
-                    text.lower(), "qwrtyuiopsasdfghjklzxcvbnm><*[]{}()"
-                )
-                or len(text) == 0
+            strings_share_characters(
+                text.lower(), "qwrtyuiopsasdfghjklzxcvbnm><*[]{}()"
+            )
+            or len(text) == 0
         ):
             return []
 

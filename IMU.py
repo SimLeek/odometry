@@ -13,7 +13,7 @@ from serial_util import get_numbers_from_text
 
 
 def unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
+    """Returns the unit vector of the vector."""
     # https://stackoverflow.com/a/13849249/782170
     vector = np.asarray(vector)
     norm = np.linalg.norm(vector)
@@ -44,7 +44,7 @@ def angle_between(v1, v2):
 
 
 def perpendicular_vector(v):
-    r""" Finds an arbitrary perpendicular vector to *v*."""
+    r"""Finds an arbitrary perpendicular vector to *v*."""
     # https://codereview.stackexchange.com/a/43937
     # for two vectors (x, y, z) and (a, b, c) to be perpendicular,
     # the following equation has to be fulfilled
@@ -135,11 +135,11 @@ class IMU(object):
         return q
 
     def get_orientation(
-            self,
-            convergence_acc: float,
-            overshoot_acc: float,
-            convergence_mag: float,
-            overshoot_mag: float,
+        self,
+        convergence_acc: float,
+        overshoot_acc: float,
+        convergence_mag: float,
+        overshoot_mag: float,
     ):
         # https://www.sciencedirect.com/science/article/pii/S2405896317321201
         if self.prev_up is not None:
@@ -168,25 +168,25 @@ class IMU(object):
 
             gy = Quaternion.from_eulers(gyro * (t2 - self.prev_orientation_time))
             pred_west = (
-                    ~gy
-                    * Quaternion(
-                np.pad(self.prev_west, (0, 1), "constant", constant_values=0)
-            )
-                    * gy
+                ~gy
+                * Quaternion(
+                    np.pad(self.prev_west, (0, 1), "constant", constant_values=0)
+                )
+                * gy
             )
             pred_up = (
-                    ~gy
-                    * Quaternion(
-                np.pad(self.prev_up, (0, 1), "constant", constant_values=0)
-            )
-                    * gy
+                ~gy
+                * Quaternion(
+                    np.pad(self.prev_up, (0, 1), "constant", constant_values=0)
+                )
+                * gy
             )
             pred_north = (
-                    ~gy
-                    * Quaternion(
-                np.pad(self.prev_north, (0, 1), "constant", constant_values=0)
-            )
-                    * gy
+                ~gy
+                * Quaternion(
+                    np.pad(self.prev_north, (0, 1), "constant", constant_values=0)
+                )
+                * gy
             )
 
             pred_north_v = np.asarray(pred_north.xyz)
@@ -202,7 +202,7 @@ class IMU(object):
             pb0 = k_bias_acc * x_acc + k_bias_mag * x_mag
             if self.prev_bias is not None:
                 self.prev_bias = (
-                        self.prev_bias * (t2 - self.prev_orientation_time) + pb0
+                    self.prev_bias * (t2 - self.prev_orientation_time) + pb0
                 )
             else:
                 self.prev_bias = pb0
@@ -344,7 +344,9 @@ def imu_loop():
     con, pro = get_i2c_imu(coms[0])
     pro.start()
     while True:
-        q = np.asarray(unit_vector(pro.protocol.imu.get_orientation(*[0.1 for _ in range(4)])))
+        q = np.asarray(
+            unit_vector(pro.protocol.imu.get_orientation(*[0.1 for _ in range(4)]))
+        )
         acc = np.asarray(unit_vector(pro.protocol.imu.get_acc()))
         if np.isnan(acc).any():
             acc = (float(0),) * 3
@@ -397,6 +399,7 @@ def imu_7d_pnum_pose_loop(confidence=0.95, bits=16, start_pos=(0, 0, 0)):
         a = PInt(*qpos, bits=bits, confidence=confidence)
         yield a
 
+
 class IMUPoseProbabilistic(object):
     def __init__(self, confidence=0.95, bits=16, start_pos=(0, 0, 0)):
         self.global_vel = np.zeros([3])
@@ -421,7 +424,8 @@ class IMUPoseProbabilistic(object):
             a = PInt(*qpos, bits=self.bits, confidence=self.confidence)
             yield a
 
-    def combine_pos(self, other:PInt):
-        temp_global_pos = PInt(*self.global_pos, bits=self.bits, confidence=self.confidence).tensor + \
-                          other.tensor*(1.0-self.confidence)
+    def combine_pos(self, other: PInt):
+        temp_global_pos = PInt(
+            *self.global_pos, bits=self.bits, confidence=self.confidence
+        ).tensor + other.tensor * (1.0 - self.confidence)
         self.global_pos = temp_global_pos.asfloat()

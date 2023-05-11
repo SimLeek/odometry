@@ -1,14 +1,21 @@
 import torch
 from torch import nn
 import torchvision.transforms.functional as FV
-from sparsepyramids.recursive_pyramidalize import nested_convs, RecursivePyramidalize2D, RecursiveSumDepyramidalize2D, \
-    apply_2func_to_nested_tensors, apply_func_to_nested_tensors
+from sparsepyramids.recursive_pyramidalize import (
+    nested_convs,
+    RecursivePyramidalize2D,
+    RecursiveSumDepyramidalize2D,
+    apply_2func_to_nested_tensors,
+    apply_func_to_nested_tensors,
+)
 from sparsepyramids.edge_pyramid import image_to_edge_pyramid, edge
 from sparsepyramids.normal_linear import NormLinear
 import math as m
 import torch.functional as F
 import torch.nn.functional as NNF
-#from pnums import PInt
+
+# from pnums import PInt
+
 
 class PyrConvLocalizer(torch.nn.Module):
     def __init__(self):
@@ -17,8 +24,8 @@ class PyrConvLocalizer(torch.nn.Module):
         # scene recognition
         self.nc2 = nested_convs(1, 8, 3, padding=1, bias=True)
         self.nc3 = nested_convs(8, 128, 3, padding=1, bias=True)
-        #self.nc4 = nested_convs(64, 256, 3, padding=1, bias=True)
-        #self.nc5 = nested_convs(256, 128, 3, padding=1, bias=True)
+        # self.nc4 = nested_convs(64, 256, 3, padding=1, bias=True)
+        # self.nc5 = nested_convs(256, 128, 3, padding=1, bias=True)
 
         # scene to pose database
         self.fcn1 = NormLinear(512, 512)
@@ -48,32 +55,32 @@ class PyrConvLocalizer(torch.nn.Module):
 
         eimg = NNF.conv2d(img, edge.to(img.device))
 
-        '''edge = image_to_edge_pyramid(img)
+        """edge = image_to_edge_pyramid(img)
         edge = apply_2func_to_nested_tensors(edge, 1e-12, torch.add)
         norm = apply_func_to_nested_tensors(edge, torch.norm, dim=(2, 3))
         edge = apply_2func_to_nested_tensors(edge, norm, torch.div)
-        edgeimg = self.de.forward(edge)'''
+        edgeimg = self.de.forward(edge)"""
         half = list(eimg.shape[-2:])
         half = [int(h // m.sqrt(2)) for h in half]
         edgeimg = FV.resize(eimg, half)
-        #edgepyr2 = self.pyr.forward(edgeimg)
+        # edgepyr2 = self.pyr.forward(edgeimg)
 
         linepyr = self.nc2.forward(edgeimg)
-        #lineimg = self.de.forward(linepyr)
+        # lineimg = self.de.forward(linepyr)
         half = list(linepyr.shape[-2:])
         half = [int(h // m.sqrt(2)) for h in half]
         lineimg = FV.resize(linepyr, half)
-        #linepyr2 = self.pyr.forward(lineimg)
+        # linepyr2 = self.pyr.forward(lineimg)
 
         shapepyr = self.nc3.forward(lineimg)
-        #shapeimg = self.de.forward(shapepyr)
-        #half = list(shapepyr.shape[-2:])
-        #half = [int(h // m.sqrt(2)) for h in half]
-        #shapeimg = FV.resize(shapeimg, half)
-        #shapepyr2 = self.pyr.forward(shapeimg)
+        # shapeimg = self.de.forward(shapepyr)
+        # half = list(shapepyr.shape[-2:])
+        # half = [int(h // m.sqrt(2)) for h in half]
+        # shapeimg = FV.resize(shapeimg, half)
+        # shapepyr2 = self.pyr.forward(shapeimg)
         sceneimg = FV.resize(shapepyr, [2, 2])
 
-        '''objpyr = self.nc4.forward(shapepyr2)
+        """objpyr = self.nc4.forward(shapepyr2)
         objimg = self.de.forward(objpyr)
         half = list(objimg.shape[-2:])
         half = [int(h // m.sqrt(2)) for h in half]
@@ -82,7 +89,7 @@ class PyrConvLocalizer(torch.nn.Module):
 
         scenepyr = self.nc5.forward(objpyr2)
         sceneimg = self.de.forward(scenepyr)
-        sceneimg = FV.resize(sceneimg, [2, 2])'''
+        sceneimg = FV.resize(sceneimg, [2, 2])"""
 
         fc1 = self.fcn1.forward(sceneimg.ravel())
         fc2 = self.fcn2.forward(fc1)
@@ -92,7 +99,7 @@ class PyrConvLocalizer(torch.nn.Module):
         return fc4
 
 
-_goal: torch.Tensor = torch.arange(2048)/2048.0
+_goal: torch.Tensor = torch.arange(2048) / 2048.0
 
 
 def toy_loss(inp: torch.Tensor):
@@ -102,7 +109,7 @@ def toy_loss(inp: torch.Tensor):
     return loss
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from displayarray import display
 
     model = PyrConvLocalizer()
@@ -116,7 +123,9 @@ if __name__ == '__main__':
             img = next(iter(d.values()))[0]
             torch_img = torch.FloatTensor(img).cuda()
             torch_img = torch_img.permute(2, 0, 1)[None, ...]
-            sceneimg = FV.resize(torch_img, [256, 256], interpolation=FV.InterpolationMode.NEAREST)
+            sceneimg = FV.resize(
+                torch_img, [256, 256], interpolation=FV.InterpolationMode.NEAREST
+            )
 
             pose = model.forward(torch_img)
             loss = toy_loss(pose)
